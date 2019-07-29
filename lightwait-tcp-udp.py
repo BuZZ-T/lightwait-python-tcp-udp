@@ -6,6 +6,12 @@ import re
 from functools import reduce
 import socket
 
+HOST = 'localhost'
+PORT = 3030
+
+# available: TCP, UDP
+PROTOCOL = 'TCP' 
+
 KNOWN_COLORS = {
     'black': '0:0:0',
     'white': '255:255:255',
@@ -42,6 +48,7 @@ def parse_color(color_string):
     else:
         return None
 
+
 def main():
     if len(sys.argv) == 1:
         print('no color given!')
@@ -56,11 +63,41 @@ def main():
 
     send_color(blink_mode, '|'.join(colors))
 
-def send_color(blink, color):
-    send_color = ('b' if blink else '') + color
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(send_color.encode(), ('127.0.0.1', 3000))
+def send_color_udp(blink, color):
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.sendto(color.encode(), (HOST, PORT))
+    except Exception as e:
+        print('Failed to send UDP message', e)
+
+
+def send_color_tcp(blink, color):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.connect((HOST, PORT))
+    except ConnectionRefusedError as e:
+        print('Connection refused for TCP port %s on "%s"!. Maybe the presenter is not started?' % (PORT, HOST))
+        return
+    except Exception as e:
+        print('Failed connecting to TCP server:', e)
+        return
+
+    try:
+        sock.sendall(color.encode())
+    except Exception as e:
+        print('failed to send TCP message', e)
+    finally:
+        sock.close()
+
+
+def send_color(blink, color):
+    color_to_send = ('b' if blink else '') + color
+
+    if PROTOCOL == 'UDP':
+        send_color_udp(blink, color_to_send)
+    elif PROTOCOL == 'TCP':
+        send_color_tcp(blink, color_to_send)
 
 if __name__ == '__main__':
     main()
