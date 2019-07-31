@@ -1,42 +1,47 @@
-# lightwait-python-udp
+# lightwait-python-tcp-udp
 
-This is a transmitter for UDP-based presenters in the [lightwait-stack](https://github.com/BuZZ-T/lightwait).
+This is a [transmitter](https://github.com/BuZZ-T/lightwait#transmitter) for TCP- or UDP-based presenters in the [lightwait-stack](https://github.com/BuZZ-T/lightwait).
 
 ## Features
 
-* Written in a few lines of python (~70)
+* Written in a few lines of python (~100)
 * Supports multiple formats as input
-    * known color names ("white", "black", "red", ...) See full list: TODO
+    * known color names ("white", "black", "red", ...) See full list: [known colors](https://github.com/BuZZ-T/lightwait#known-colors)
     * case-insensitive 3-digit hex code without the leading # (e.g. "F00", meaning "#FF0000")
     * case-insensitive 6-digit hex code without the leading # (e.g. "FF0000")
 * Supports
     * solid color
     * blinking color (alternating to black)
     * multiple blinking colors
-* Sending the color in the format <span style="color: red;">lightwait-tp</span> text protocol format to UDP Port 3000 on localhost
-* Usable both with python2 and python3 (tested with 2.7.15 and 3.6.8 on Ubuntu 18.04)
+* Sending the color in the format [lightwait-tp](https://github.com/BuZZ-T/lightwait#transmitter---presenter) communication protocol to TCP Port or UDP Port 3030 on localhost
+* Usable both with python2 and python3 (see [Tested on](#tested))
+* "Configurable" whether to use TCP or UDP via constant in the first lines of the code
 
 ## Usage
 
-Currently these lightwait-presenters are able to communication via UDP:
+Currently these lightwait-presenters are able to communicate via UDP:
 
-* lightwait-python-gtk
+* [lightwait-python-gtk](https://github.com/BuZZ-T/lightwait-python-gtk)
 
-If a presenter is listening on localhost udp port 3000, just call the transmitter using the <span style="color: red;">lightwait-tm-cli API</span>:
+Currently these lightwait-presenters are able to communicate via TCP:
 
-```
-./lightwait-udp.py white
-./lightwait-udp.py -b white
-./lightwait-udp.py red green
-```
+* [lightwait-gnome-extension](https://github.com/BuZZ-T/lightwait-gnome-extension)
 
-If your python is not available by `/usr/bin/env` or the `/usr/bin/env` command is not available, just call them like this:
+If a presenter is listening on port 3030, just call the transmitter using the [lightwait-tp](https://github.com/BuZZ-T/lightwait#transmitter---presenter) communication protocol.
 
 ```
-path/to/your/python(2/3): lightwait-udp.py white
-path/to/your/python(2/3): lightwait-udp.py -b white
-path/to/your/python(2/3): lightwait-udp.py red green
+./lightwait-tcp-udp.py white
+./lightwait-tcp-udp.py -b white
+./lightwait-tcp-udp.py red green
 ```
+You can set the protocol in two ways:
+
+* Changing the `PROTOCOL` variable directly in the code. Available values are "TCP" or "UDP", both uppercase
+* Changing the name of the python script (the easiest way is to create a symlink). If the name contains "tcp" but not "udp", a TCP connection is used and vice versa.
+    E.g.: `ln -s lightwait-tcp-udp.py lightwait-udp.py` for UDP and `ln -s lightwait-tcp-udp.py lightwait-tcp.py` for TCP.
+
+
+<a name="tested"></a>
 ## Tested on
 
 | OS | Version | python | Result
@@ -44,3 +49,5 @@ path/to/your/python(2/3): lightwait-udp.py red green
 | Ubuntu | 18.04 | 2.7.15+ | ✔
 | Ubuntu | 18.04 | 3.6.8 | ✔
 | Ubuntu | 18.04 | 3.7.3 | ✔
+| Ubuntu | 18.04 | pypy 5.10.0 (for 2.7.13) via aptitude | ✔
+| Ubuntu | 18.04 | pypy 5.10.1 (for 3.5.3) via snap | ✔

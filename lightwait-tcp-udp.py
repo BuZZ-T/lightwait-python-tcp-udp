@@ -10,7 +10,7 @@ HOST = 'localhost'
 PORT = 3030
 
 # available: TCP, UDP
-PROTOCOL = 'TCP' 
+PROTOCOL = 'UDP' 
 
 KNOWN_COLORS = {
     'black': '0:0:0',
@@ -50,6 +50,8 @@ def parse_color(color_string):
 
 
 def main():
+    global PROTOCOL
+
     if len(sys.argv) == 1:
         print('no color given!')
         sys.exit(1)
@@ -60,6 +62,15 @@ def main():
     color_strings = sys.argv[2:] if blink_flag_set else sys.argv[1:]
     parsed_colors = [parse_color(color) for color in color_strings if color is not None]
     colors = [color for color in parsed_colors if color is not None]
+
+    # program name without path
+    program_name = sys.argv[0].split('/')[-1]
+
+    # overwrite protocol by name of program (use "ln -s" for that!)
+    if not 'tcp' in program_name and 'udp' in program_name:
+        PROTOCOL = 'UDP'
+    elif 'tcp' in program_name and not 'udp' in program_name:
+        PROTOCOL = 'TCP'
 
     send_color(blink_mode, '|'.join(colors))
 
@@ -76,11 +87,8 @@ def send_color_tcp(blink, color):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.connect((HOST, PORT))
-    except ConnectionRefusedError as e:
-        print('Connection refused for TCP port %s on "%s"!. Maybe the presenter is not started?' % (PORT, HOST))
-        return
     except Exception as e:
-        print('Failed connecting to TCP server:', e)
+        print('Connection refused for TCP port %s on "%s"!. Maybe the presenter is not started?' % (PORT, HOST))
         return
 
     try:
@@ -98,6 +106,8 @@ def send_color(blink, color):
         send_color_udp(blink, color_to_send)
     elif PROTOCOL == 'TCP':
         send_color_tcp(blink, color_to_send)
+    else:
+        print('Unknown protocol "%s", only "TCP" and "UDP" are allowed!')
 
 if __name__ == '__main__':
     main()
