@@ -22,6 +22,7 @@ This is a [transmitter](https://github.com/BuZZ-T/lightwait#transmitter) for TCP
 Currently these lightwait-presenters are able to communicate via UDP:
 
 * [lightwait-python-gtk](https://github.com/BuZZ-T/lightwait-python-gtk)
+* [lightwait-js-web-extension](https://github.com/BuZZ-T/lightwait-js-web-extension)
 
 Currently these lightwait-presenters are able to communicate via TCP:
 
