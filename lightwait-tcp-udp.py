@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from __future__ import print_function
+import enum
 import sys
 import re
 from functools import reduce
@@ -8,9 +9,6 @@ import socket
 
 HOST = 'localhost'
 PORT = 3030
-
-# available: TCP, UDP
-PROTOCOL = 'UDP' 
 
 KNOWN_COLORS = {
     'black': '0:0:0',
@@ -25,6 +23,59 @@ KNOWN_COLORS = {
 }
 
 HEXMAP = '0123456789ABCDEF'
+
+class Protocol(enum.Enum):
+    TCP = 'TCP'
+    UDP = 'UDP'
+
+
+# available: TCP, UDP
+used_protocol = Protocol.UDP
+
+class LightwaitTcpUdp(object):
+
+    tcp_sock = None
+
+    def __setup_tcp(self):
+        self.tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.tcp_sock.connect((HOST, PORT))
+        except Exception:
+            print('Connection refused for TCP port %s on "%s"!. Maybe the presenter is not started?' % (PORT, HOST))
+            return
+
+    def __init__(self, protocol: Protocol):
+        self.protocol = protocol
+        if protocol == Protocol.TCP:
+            self.__setup_tcp()
+
+    def __del__(self):
+        if self.tcp_sock:
+            self.tcp_sock.close()
+
+    def __send_color_udp(self, color):
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.sendto(color.encode(), (HOST, PORT))
+        except Exception as e:
+            print('Failed to send UDP message', e)
+
+    def __send_color_tcp(self, color):
+        try:
+            self.tcp_sock.sendall(color.encode())
+        except Exception as e:
+            print('failed to send TCP message', e)
+        # finally:
+        #     sock.close()
+
+    def send(self, blink: bool, color: str):
+        color_to_send = ('b' if blink else '') + color
+        if self.protocol == Protocol.TCP:
+            self.__send_color_tcp(color_to_send)
+        elif self.protocol == Protocol.UDP:
+            self.__send_color_udp(color_to_send)
+        else:
+            print('Unknown protocol "%s", only "TCP" and "UDP" are currently supported!')
 
 
 def parse_color(color_string):
@@ -50,11 +101,13 @@ def parse_color(color_string):
 
 
 def main():
-    global PROTOCOL
+    global used_protocol
 
     if len(sys.argv) == 1:
         print('no color given!')
         sys.exit(1)
+
+    # TODO: move parse logic into lw.send
 
     blink_flag_set = sys.argv[1] == '--blink' or sys.argv[1] == '-b'
     blink_mode = blink_flag_set or len(sys.argv) > 2
@@ -68,46 +121,13 @@ def main():
 
     # overwrite protocol by name of program (use "ln -s" for that!)
     if not 'tcp' in program_name and 'udp' in program_name:
-        PROTOCOL = 'UDP'
+        used_protocol = Protocol.UDP
     elif 'tcp' in program_name and not 'udp' in program_name:
-        PROTOCOL = 'TCP'
+        used_protocol = Protocol.TCP
 
-    send_color(blink_mode, '|'.join(colors))
+    lw_tcp_udp = LightwaitTcpUdp(used_protocol)
+    lw_tcp_udp.send(blink_mode, '|'.join(colors))
 
-
-def send_color_udp(blink, color):
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto(color.encode(), (HOST, PORT))
-    except Exception as e:
-        print('Failed to send UDP message', e)
-
-
-def send_color_tcp(blink, color):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.connect((HOST, PORT))
-    except Exception as e:
-        print('Connection refused for TCP port %s on "%s"!. Maybe the presenter is not started?' % (PORT, HOST))
-        return
-
-    try:
-        sock.sendall(color.encode())
-    except Exception as e:
-        print('failed to send TCP message', e)
-    finally:
-        sock.close()
-
-
-def send_color(blink, color):
-    color_to_send = ('b' if blink else '') + color
-
-    if PROTOCOL == 'UDP':
-        send_color_udp(blink, color_to_send)
-    elif PROTOCOL == 'TCP':
-        send_color_tcp(blink, color_to_send)
-    else:
-        print('Unknown protocol "%s", only "TCP" and "UDP" are allowed!')
 
 if __name__ == '__main__':
     main()
